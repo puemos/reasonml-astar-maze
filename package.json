@@ -1,0 +1,21 @@
+{
+  "name": "reasonml-ai-pacman",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "react": "^16.3.2",
+    "react-dom": "^16.3.2",
+    "reason-scripts": "0.9.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "prepare": "npm link bs-platform"
+  },
+  "devDependencies": {
+    "@glennsl/bs-jest": "^0.4.2",
+    "reason-react": "^0.4.1"
+  }
+}
