@@ -1,9 +1,6 @@
-open Problem;
-
 type node = {
-  state,
   parent: node,
-  actions: list(action),
+  actions: list(string),
   pathCost: int,
   depth: int,
 };
