@@ -1,23 +1,20 @@
-[@bs.module "./registerServiceWorker"]
-external register_service_worker : unit => unit = "default";
-
 open GameState;
 
-let shit = GraphSearch.graphSearch();
+open Tile;
 
-let shit =
-  List.map(
-    ac =>
-      switch (ac) {
-      | Right => "Right"
-      | Left => "Left"
-      | Top => "Top"
-      | Bottom => "Bottom"
-      },
-    shit,
-  );
+open Rationale;
 
-Js.log(shit);
-ReactDOMRe.renderToElementWithId(<div />, "root");
+open Rationale.Function;
 
-register_service_worker();
+open PositionSearchProblem;
+
+let startState = PositionSearchProblem.getStartState();
+
+let (result, steps) =
+  GraphSearch.graphSearch(startState, (state, actions) => 1);
+
+
+ReactDOMRe.renderToElementWithId(
+  <div> <div> <Grid steps /> </div> </div>,
+  "root",
+);

@@ -6,7 +6,12 @@
       "subdirs": true
     }
   ],
-  "bs-dependencies": ["reason-react", "@glennsl/bs-jest"],
+  "bs-dependencies": [
+    "reason-react",
+    "@glennsl/bs-jest",
+    "rationale",
+    "bs-css"
+  ],
   "reason": {
     "react-jsx": 2
   },

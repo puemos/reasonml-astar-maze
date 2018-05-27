@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "bs-css": "^6.7.0",
+    "rationale": "^0.1.4",
     "react": "^16.3.2",
     "react-dom": "^16.3.2",
     "reason-scripts": "0.9.0"

@@ -1,5 +1,7 @@
 open PositionSearchProblem;
 
+open GameState;
+
 type frontierLine = (
   PositionSearchProblem.state,
   list(PositionSearchProblem.action),
@@ -14,36 +16,57 @@ module GameStateHashSet =
     },
   );
 
-let rec loop = (~frontier, ~explored) => {
-  let next: option(frontierLine) = Belt_MutableStack.pop(frontier);
+let rec loop = (~frontier, ~explored, ~steps, ~heuristic) => {
+  let (_, next, frontier) = try (PrioQueue.PrioQueue.extract(frontier)){
+  | PrioQueue.PrioQueue.Queue_is_empty=>(0,None,frontier);
+  };
   switch (next) {
-  | None => []
+  | None => ([], [])
   | Some((state, actions)) =>
+    let steps = steps @ [state];
     let isGoalState = PositionSearchProblem.isGoalState(state);
     if (isGoalState) {
-      actions;
+      (actions, steps);
     } else if (! Belt_HashSet.has(explored, state)) {
       Belt_HashSet.add(explored, state);
-      let successors = PositionSearchProblem.getSuccessors(state);
-      Belt.List.forEach(successors, ((state, action, _)) =>
-        if (! Belt_HashSet.has(explored, state)) {
-          let nextActions = Belt.List.add(actions, action);
-          let successorNode = (state, nextActions);
-          Belt_MutableStack.push(frontier, successorNode);
-        }
-      );
-      loop(~frontier, ~explored);
+      let successors =
+        state
+        |> PositionSearchProblem.getSuccessors
+        |> Belt.List.keep(_, ((state, _, _)) =>
+             ! Belt_HashSet.has(explored, state)
+           )
+        |> Belt.List.map(
+             _,
+             ((state, action, _)) => {
+               let nextActions = actions @ [action];
+               (
+                 PositionSearchProblem.getCostOfActions(nextActions),
+                 Some((state, nextActions)),
+               );
+             },
+           );
+      let frontier = PrioQueue.PrioQueue.insertAll(frontier, successors);
+      loop(~frontier, ~explored, ~steps, ~heuristic);
     } else {
-      loop(~frontier, ~explored);
+      loop(~frontier, ~explored, ~steps, ~heuristic);
     };
   };
 };
 
-let graphSearch = () => {
-  let frontier = Belt.MutableStack.make();
+let graphSearch = (startState, heuristic) => {
+  let frontier = PrioQueue.PrioQueue.empty;
   let explored =
     Belt_HashSet.make(~hintSize=10, ~id=(module GameStateHashSet));
-  let startState = PositionSearchProblem.getStartState();
-  Belt.MutableStack.push(frontier, (startState, []));
-  loop(~frontier, ~explored=Belt_HashSet.copy(explored));
+  let frontier =
+    PrioQueue.PrioQueue.insert(
+      frontier,
+      heuristic(startState, []),
+      Some((startState, [])),
+    );
+  loop(
+    ~frontier,
+    ~explored=Belt_HashSet.copy(explored),
+    ~steps=[],
+    ~heuristic,
+  );
 };
