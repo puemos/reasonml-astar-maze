@@ -8,7 +8,7 @@ module PrioQueue = {
     switch (queue) {
     | Empty => [@implicit_arity] Node(prio, elt, Empty, Empty)
     | [@implicit_arity] Node(p, e, left, right) =>
-      if (prio <= p) {
+      if (prio >= p) {
         [@implicit_arity] Node(prio, elt, insert(right, p, e), left);
       } else {
         [@implicit_arity] Node(p, e, insert(right, prio, elt), left);

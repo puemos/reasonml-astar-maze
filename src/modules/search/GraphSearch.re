@@ -35,7 +35,8 @@ let rec loop = (~frontier, ~explored, ~steps, ~heuristic) => {
              ((state, action, _)) => {
                let nextActions = actions @ [action];
                (
-                 PositionSearchProblem.getCostOfActions(nextActions),
+                 PositionSearchProblem.getCostOfActions(nextActions)
+                 + heuristic(state),
                  Some((state, nextActions)),
                );
              },
@@ -52,10 +53,6 @@ let graphSearch = (startState, heuristic) => {
   let frontier = PrioQueue.PrioQueue.empty;
   let explored = [];
   let frontier =
-    PrioQueue.PrioQueue.insert(
-      frontier,
-      heuristic(startState, []),
-      Some((startState, [])),
-    );
+    PrioQueue.PrioQueue.insert(frontier, 0, Some((startState, [])));
   loop(~frontier, ~explored, ~steps=[], ~heuristic);
 };
