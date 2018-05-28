@@ -18,7 +18,7 @@ module Styles = {
       flexDirection(column),
       alignItems(stretch),
       backgroundColor(
-        isPlayer ? pink : isFood ? green : isWall ? black : grey,
+        isFood ? green : isPlayer ? pink : isWall ? black : grey,
       ),
       position(relative),
     ]);
@@ -50,7 +50,7 @@ let make = (~steps, _children) => {
     },
   didMount: self =>
     self.state.timerId :=
-      Some(Js.Global.setInterval(() => self.send(Tick), 1000)),
+      Some(Js.Global.setInterval(() => self.send(Tick), 2)),
   willUnmount: self =>
     switch (self.state.timerId^) {
     | Some(id) => Js.Global.clearInterval(id)
@@ -59,7 +59,8 @@ let make = (~steps, _children) => {
   render: ({state}) => {
     let currState =
       switch (Belt.List.get(steps, state.count)) {
-      | None => Belt.List.get(steps, 0) |> Belt.Option.getExn
+      | None =>
+        Belt.List.get(steps, List.length(steps) - 1) |> Belt.Option.getExn
       | Some(s) => s
       };
     let {height, width, walls, food} = currState.world;
@@ -77,13 +78,7 @@ let make = (~steps, _children) => {
                     Styles.tile(
                       ~isWall=RList.contains(i, walls),
                       ~isFood=RList.contains(i, food),
-                      ~isPlayer=
-                        i
-                        == World.getNodeId(
-                             currState.player.x,
-                             currState.player.y,
-                             width,
-                           ),
+                      ~isPlayer=RList.contains(i, currState.path),
                     )
                   )
                 />,

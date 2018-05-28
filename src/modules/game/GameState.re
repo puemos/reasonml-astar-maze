@@ -26,6 +26,7 @@ type gameStateData = {
   lose: bool,
   win: bool,
   scoreChange: int,
+  path: list(int),
 };
 
 let isWin = (data: gameStateData) => data.win;
@@ -89,11 +90,13 @@ let actionToVector = (action: dir) =>
   | Bottom => (0, 1)
   };
 
-let eq = (a, b) => {
+let compare = (a, b) => {
   let playerMoved = a.player.x == b.player.x && a.player.y == b.player.y;
   let foodEaten = Belt_List.cmpByLength(a.world.food, b.world.food) !== 0;
-  playerMoved || foodEaten;
+  ! playerMoved && ! foodEaten ? 0 : 1;
 };
+
+let eq = (a, b) => compare(a, b) === 0;
 
 let hash = a => {
   let playerHash = a.player.x * 10 + a.player.y;
@@ -115,4 +118,5 @@ let make = () => {
   lose: false,
   win: false,
   scoreChange: 0,
+  path: [],
 };

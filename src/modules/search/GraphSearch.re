@@ -1,5 +1,7 @@
 open PositionSearchProblem;
 
+open Rationale;
+
 open GameState;
 
 type frontierLine = (
@@ -7,33 +9,26 @@ type frontierLine = (
   list(PositionSearchProblem.action),
 );
 
-module GameStateHashSet =
-  Belt.Id.MakeHashable(
-    {
-      type t = PositionSearchProblem.state;
-      let eq = PositionSearchProblem.equal;
-      let hash = PositionSearchProblem.hash;
-    },
-  );
-
 let rec loop = (~frontier, ~explored, ~steps, ~heuristic) => {
-  let (_, next, frontier) = try (PrioQueue.PrioQueue.extract(frontier)){
-  | PrioQueue.PrioQueue.Queue_is_empty=>(0,None,frontier);
-  };
+  let (_, next, frontier) =
+    try (PrioQueue.PrioQueue.extract(frontier)) {
+    | PrioQueue.PrioQueue.Queue_is_empty => (0, None, frontier)
+    };
   switch (next) {
-  | None => ([], [])
+  | None => ([], steps)
   | Some((state, actions)) =>
     let steps = steps @ [state];
     let isGoalState = PositionSearchProblem.isGoalState(state);
+    let isUnexplored = ! RList.contains({...state, path: []}, explored);
     if (isGoalState) {
       (actions, steps);
-    } else if (! Belt_HashSet.has(explored, state)) {
-      Belt_HashSet.add(explored, state);
+    } else if (isUnexplored) {
+      let explored = RList.append({...state, path: []}, explored);
       let successors =
         state
         |> PositionSearchProblem.getSuccessors
-        |> Belt.List.keep(_, ((state, _, _)) =>
-             ! Belt_HashSet.has(explored, state)
+        |> Belt.List.keep(_, ((successor, _, _)) =>
+             ! RList.contains({...successor, path: []}, explored)
            )
         |> Belt.List.map(
              _,
@@ -55,18 +50,12 @@ let rec loop = (~frontier, ~explored, ~steps, ~heuristic) => {
 
 let graphSearch = (startState, heuristic) => {
   let frontier = PrioQueue.PrioQueue.empty;
-  let explored =
-    Belt_HashSet.make(~hintSize=10, ~id=(module GameStateHashSet));
+  let explored = [];
   let frontier =
     PrioQueue.PrioQueue.insert(
       frontier,
       heuristic(startState, []),
       Some((startState, [])),
     );
-  loop(
-    ~frontier,
-    ~explored=Belt_HashSet.copy(explored),
-    ~steps=[],
-    ~heuristic,
-  );
+  loop(~frontier, ~explored, ~steps=[], ~heuristic);
 };
