@@ -1,14 +1,10 @@
-open SearchProblem;
-
-open Tile;
-
 open GameState;
+open World;
 
 module PositionSearchProblem = {
-  type state = GameState.gameStateData;
+  type state = (pos, list(pos), list(pos));
   type action = GameState.dir;
-  let compare = GameState.compare;
-  let eq = GameState.eq;
+  let equal = (a, b) => {};
   let getStartState = s => GameState.make();
   let isGoalState = state => Belt.List.length(state.world.food) == 0;
   let getCostOfActions = actions => List.length(actions);
@@ -18,29 +14,11 @@ module PositionSearchProblem = {
       legalActions,
       action => {
         let (dx, dy) = GameState.actionToVector(action);
-        let nextPlayer = {x: state.player.x + dx, y: state.player.y + dy};
-        let nextPlayerNodeId =
-          World.getNodeId(
-            ~x=nextPlayer.x,
-            ~y=nextPlayer.y,
-            ~width=state.world.width,
-          );
-        let food =
-          Belt_List.keep(state.world.food, i => i != nextPlayerNodeId);
-        let path = Belt.List.add(state.path, nextPlayerNodeId);
-        (
-          {
-            ...state,
-            world: {
-              ...state.world,
-              food,
-            },
-            player: nextPlayer,
-            path,
-          },
-          action,
-          1,
-        );
+        let ((px, py), food, path) = state;
+        let nextPlayer = (px + dx, py + dy);
+        let nextFood = Belt.List.keep(food, i => i != nextPlayer);
+        let nextPath = Belt.List.add(path, nextPlayer);
+        ((nextPlayer, nextFood, nextPath), action, 1);
       },
     );
   };

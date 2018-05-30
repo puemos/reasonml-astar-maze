@@ -24,23 +24,38 @@ let rec loop = (~frontier, ~explored, ~steps, ~heuristic) => {
       (actions, steps);
     } else if (isUnexplored) {
       let explored = RList.append({...state, path: []}, explored);
+
       let successors =
         state
         |> PositionSearchProblem.getSuccessors
-        |> Belt.List.keep(_, ((successor, _, _)) =>
-             ! RList.contains({...successor, path: []}, explored)
+        |> Belt.List.keep(
+             _,
+             ((successor, action, _)) => {
+               let isContains =
+                 RList.containsWith(
+                   PositionSearchProblem.eq(successor),
+                   explored,
+                 );
+               if (state.player.x === 2 && state.player.y === 2) {
+                 Js.log2("successor", Array.of_list(successor.world.food));
+                 Js.log3("action", action, isContains);
+                 Js.log2(state, successor);
+               };
+               ! isContains;
+             },
            )
         |> Belt.List.map(
              _,
-             ((state, action, _)) => {
+             ((successor, action, _)) => {
                let nextActions = actions @ [action];
-               (
+               let cost =
                  PositionSearchProblem.getCostOfActions(nextActions)
-                 + heuristic(state),
-                 Some((state, nextActions)),
-               );
+                 + heuristic(successor);
+
+               (cost, Some((successor, nextActions)));
              },
            );
+
       let frontier = PrioQueue.PrioQueue.insertAll(frontier, successors);
       loop(~frontier, ~explored, ~steps, ~heuristic);
     } else {

@@ -1,26 +1,28 @@
 open Rationale;
-
 open World;
-
 open GameState;
-
-open Tile;
 
 module Styles = {
   open Css;
   let row =
     style([display(flexBox), flexDirection(row), alignItems(stretch)]);
-  let tile = (~isWall, ~isFood, ~isPlayer) =>
+  let tileWrapper = (~isWall) =>
     style([
       display(flexBox),
       width(px(20)),
       height(px(20)),
       flexDirection(column),
       alignItems(stretch),
-      backgroundColor(
-        isFood ? green : isPlayer ? pink : isWall ? black : grey,
-      ),
+      backgroundColor(isWall ? black : grey),
       position(relative),
+    ]);
+  let tile = (~isPlayer) =>
+    style([
+      display(flexBox),
+      margin(px(5)),
+      width(px(10)),
+      height(px(10)),
+      backgroundColor(isPlayer ? pink : transparent),
     ]);
 };
 
@@ -34,12 +36,12 @@ type state = {
 
 let component = ReasonReact.reducerComponent("Grid");
 
-let make = (~steps, _children) => {
+let make = (~steps, ~startState, _children) => {
   ...component,
   initialState: () => {count: 0, timerId: ref(None)},
   reducer: (action, state) =>
     switch (action, Belt.List.size(steps) - state.count) {
-    | (Tick, 0) =>
+    | (Tick, 1) =>
       switch (state.timerId^) {
       | Some(id) =>
         Js.Global.clearInterval(id);
@@ -50,7 +52,7 @@ let make = (~steps, _children) => {
     },
   didMount: self =>
     self.state.timerId :=
-      Some(Js.Global.setInterval(() => self.send(Tick), 2)),
+      Some(Js.Global.setInterval(() => self.send(Tick), 200)),
   willUnmount: self =>
     switch (self.state.timerId^) {
     | Some(id) => Js.Global.clearInterval(id)
@@ -58,31 +60,36 @@ let make = (~steps, _children) => {
     },
   render: ({state}) => {
     let currState =
-      switch (Belt.List.get(steps, state.count)) {
-      | None =>
-        Belt.List.get(steps, List.length(steps) - 1) |> Belt.Option.getExn
-      | Some(s) => s
-      };
-    let {height, width, walls, food} = currState.world;
-    Belt_Array.range(0, height * width - 1)
+      Belt.List.get(steps, state.count)
+      |> Belt.Option.getWithDefault(_, startState);
+    let {height, width, walls, food} = startState.world;
+    Belt.Array.range(0, height * width - 1)
     |> Belt_Array.reverse
     |> Array.to_list
     |> RList.splitEvery(width)
     |> List.map(row =>
          row
-         |> List.map(
-              i =>
-                <span
-                  key=(string_of_int(i))
+         |> Belt.List.map(_, World.getXY(width))
+         |> Belt.List.map(_, ((x, y)) =>
+              <div
+                key=(string_of_int(x) ++ string_of_int(y))
+                className=(
+                  Styles.tileWrapper(~isWall=RList.contains((x, y), walls))
+                )>
+                <div
+                  key=(string_of_int(x) ++ string_of_int(y))
                   className=(
                     Styles.tile(
-                      ~isWall=RList.contains(i, walls),
-                      ~isFood=RList.contains(i, food),
-                      ~isPlayer=RList.contains(i, currState.path),
+                      ~isPlayer=RList.contains((x, y), currState.path),
+                    )
+                  )>
+                  (
+                    ReasonReact.string(
+                      RList.contains((x, y), food) ? "*" : "",
                     )
                   )
-                />,
-              _,
+                </div>
+              </div>
             )
          |> Array.of_list
          |> Belt_Array.reverse
