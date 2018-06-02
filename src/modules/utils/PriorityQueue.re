@@ -173,7 +173,7 @@ module type S = {
   let reorder_down: (t, elt) => unit;
 };
 
-module Make = (H: HashedType) => {
+module Make = (H: HashedType) : (S with type elt := H.t) => {
   type elt = H.t;
   type order = (elt, elt) => bool;
   module Tbl = Hashtbl.Make(H);
