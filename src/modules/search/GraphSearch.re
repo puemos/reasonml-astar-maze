@@ -19,7 +19,7 @@ module Make = (P: SearchProblem) : (S with type state := P.state) => {
       None;
     } else {
       let next = StatePriorityQueue.first(frontier);
-      StatePriorityQueue.remove(frontier, next);
+      StatePriorityQueue.remove_first(frontier);
 
       Some(next);
     };
@@ -32,7 +32,7 @@ module Make = (P: SearchProblem) : (S with type state := P.state) => {
     | Some((_, state, actions)) =>
       let steps = steps @ [state];
       let isGoalState = P.isGoalState(state);
-      let isUnexplored = !RList.containsWith(P.equal(state), explored);
+      let isUnexplored = ! RList.containsWith(P.equal(state), explored);
       if (isGoalState) {
         steps;
       } else if (isUnexplored) {
