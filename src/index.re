@@ -1,7 +1,7 @@
 open GameState;
 open PositionSearchProblem;
 
-let startState = PositionSearchProblem.getStartState();
+let startState = GraphSearch.Problem.getStartState();
 
 let closet = (prevPos, foodPos) =>
   foodPos
@@ -21,11 +21,9 @@ let rec closetPath = (prevPos, foodPos) =>
       Belt.List.keep(foodPos, ((a, b)) => a != cx || b != cy);
     cost + closetPath(pos, nextFoodPos);
   };
-let heuristic = (state: gameState) => {
-  let foodPos =
-    state.world.food |> Belt.List.map(_, World.getXY(state.world.width));
-  closetPath((state.player.x, state.player.y), foodPos);
-};
+
+let heuristic = (state: GraphSearch.Problem.t) =>
+  closetPath(state.player, state.world.food);
 
 let (result, steps) = GraphSearch.graphSearch(startState, heuristic);
 

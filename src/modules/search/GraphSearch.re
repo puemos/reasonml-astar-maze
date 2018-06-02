@@ -1,62 +1,61 @@
-open PositionSearchProblem;
-
 open Rationale;
 
-open GameState;
+module Problem =
+  PositionSearchProblem.Make({});
+module StatePriorityQueue =
+  PriorityQueue.Make({
+    type t = (int, Problem.t, list(Problem.action));
+    let equal = ((_, a, _), (_, b, _)) => Problem.equal(a, b);
+    let hash = ((_, a, _)) => Problem.hash(a);
+  });
 
-type frontierLine = (
-  PositionSearchProblem.state,
-  list(PositionSearchProblem.action),
-);
+type state = Problem.t;
+type action = Problem.action;
+
+type frontierLine = (state, list(action));
+
+let popFrontierLine = frontier =>
+  if (StatePriorityQueue.is_empty(frontier)) {
+    None;
+  } else {
+    let next = StatePriorityQueue.first(frontier);
+    StatePriorityQueue.remove(frontier, next);
+
+    Some(next);
+  };
 
 let rec loop = (~frontier, ~explored, ~steps, ~heuristic) => {
-  let (_, next, frontier) =
-    try (PrioQueue.PrioQueue.extract(frontier)) {
-    | PrioQueue.PrioQueue.Queue_is_empty => (0, None, frontier)
-    };
+  let next = popFrontierLine(frontier);
+
   switch (next) {
   | None => ([], steps)
-  | Some((state, actions)) =>
+  | Some((_, state, actions)) =>
     let steps = steps @ [state];
-    let isGoalState = PositionSearchProblem.isGoalState(state);
-    let isUnexplored = ! RList.contains({...state, path: []}, explored);
+    let isGoalState = Problem.isGoalState(state);
+    let isUnexplored = ! RList.contains(state, explored);
     if (isGoalState) {
       (actions, steps);
     } else if (isUnexplored) {
-      let explored = RList.append({...state, path: []}, explored);
+      let explored = RList.append(state, explored);
 
-      let successors =
-        state
-        |> PositionSearchProblem.getSuccessors
-        |> Belt.List.keep(
-             _,
-             ((successor, action, _)) => {
-               let isContains =
-                 RList.containsWith(
-                   PositionSearchProblem.eq(successor),
-                   explored,
-                 );
-               if (state.player.x === 2 && state.player.y === 2) {
-                 Js.log2("successor", Array.of_list(successor.world.food));
-                 Js.log3("action", action, isContains);
-                 Js.log2(state, successor);
-               };
-               ! isContains;
-             },
-           )
-        |> Belt.List.map(
-             _,
-             ((successor, action, _)) => {
-               let nextActions = actions @ [action];
-               let cost =
-                 PositionSearchProblem.getCostOfActions(nextActions)
-                 + heuristic(successor);
+      state
+      |> Problem.getSuccessors
+      |> Belt.List.keep(_, ((successor, _, _)) =>
+           ! RList.containsWith(Problem.equal(successor), explored)
+         )
+      |> Belt.List.forEach(
+           _,
+           ((successor, action, _)) => {
+             let nextActions = actions @ [action];
+             let cost =
+               Problem.getCostOfActions(nextActions) + heuristic(successor);
+             StatePriorityQueue.add(
+               frontier,
+               (cost, successor, nextActions),
+             );
+           },
+         );
 
-               (cost, Some((successor, nextActions)));
-             },
-           );
-
-      let frontier = PrioQueue.PrioQueue.insertAll(frontier, successors);
       loop(~frontier, ~explored, ~steps, ~heuristic);
     } else {
       loop(~frontier, ~explored, ~steps, ~heuristic);
@@ -65,9 +64,8 @@ let rec loop = (~frontier, ~explored, ~steps, ~heuristic) => {
 };
 
 let graphSearch = (startState, heuristic) => {
-  let frontier = PrioQueue.PrioQueue.empty;
-  let explored = [];
-  let frontier =
-    PrioQueue.PrioQueue.insert(frontier, 0, Some((startState, [])));
-  loop(~frontier, ~explored, ~steps=[], ~heuristic);
+  let frontier = StatePriorityQueue.make(((a, _, _), (b, _, _)) => a < b);
+  StatePriorityQueue.add(frontier, (0, startState, []));
+
+  loop(~frontier, ~explored=[], ~steps=[], ~heuristic);
 };

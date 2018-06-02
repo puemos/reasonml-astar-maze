@@ -1,6 +1,5 @@
 open Rationale;
 open World;
-open GameState;
 
 module Styles = {
   open Css;
@@ -36,12 +35,17 @@ type state = {
 
 let component = ReasonReact.reducerComponent("Grid");
 
-let make = (~steps, ~startState, _children) => {
+let make =
+    (
+      ~steps: list(GraphSearch.Problem.t),
+      ~startState: GraphSearch.Problem.t,
+      _children,
+    ) => {
   ...component,
   initialState: () => {count: 0, timerId: ref(None)},
   reducer: (action, state) =>
     switch (action, Belt.List.size(steps) - state.count) {
-    | (Tick, 1) =>
+    | (Tick, 2) =>
       switch (state.timerId^) {
       | Some(id) =>
         Js.Global.clearInterval(id);
@@ -52,7 +56,7 @@ let make = (~steps, ~startState, _children) => {
     },
   didMount: self =>
     self.state.timerId :=
-      Some(Js.Global.setInterval(() => self.send(Tick), 200)),
+      Some(Js.Global.setInterval(() => self.send(Tick), 20)),
   willUnmount: self =>
     switch (self.state.timerId^) {
     | Some(id) => Js.Global.clearInterval(id)
@@ -78,11 +82,7 @@ let make = (~steps, ~startState, _children) => {
                 )>
                 <div
                   key=(string_of_int(x) ++ string_of_int(y))
-                  className=(
-                    Styles.tile(
-                      ~isPlayer=RList.contains((x, y), currState.path),
-                    )
-                  )>
+                  className=(Styles.tile(~isPlayer=false))>
                   (
                     ReasonReact.string(
                       RList.contains((x, y), food) ? "*" : "",
