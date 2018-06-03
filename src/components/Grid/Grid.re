@@ -1,24 +1,32 @@
 open Cell;
 
 module Grid = {
-  type action =
-    | Tick;
-
-  type state = {
-    count: int,
-    timerId: ref(option(Js.Global.intervalId)),
-  };
   let styles =
     Css.(
-      {"row": [display(flexBox), flexDirection(row), alignItems(stretch)]}
+      {
+        "grid": [
+          display(flexBox),
+          flexDirection(column),
+          alignItems(stretch),
+          justifyContent(center),
+          width(vw(80.0)),
+        ],
+        "row": [
+          display(flexBox),
+          flexDirection(row),
+          alignItems(stretch),
+          justifyContent(center),
+          width(pct(100.0)),
+        ],
+      }
     );
+
   let component = ReasonReact.statelessComponent("Grid");
-  let make = (~steps, _) => {
+  let make = (~matrix, _) => {
     ...component,
     render: _ => {
-      let step = Belt.List.getExn(steps, Belt.List.length(steps) - 1);
-      let matrix =
-        step
+      let matrixNode =
+        matrix
         |> Belt.Array.map(_, Belt.Array.map(_, type_ => <Cell type_ />))
         |> Belt.Array.map(_, xs =>
              <div className=(Css.style(styles##row))>
@@ -26,7 +34,7 @@ module Grid = {
              </div>
            )
         |> ReasonReact.array;
-      <div> matrix </div>;
+      <div className=(Css.style(styles##grid))> matrixNode </div>;
     },
   };
 };

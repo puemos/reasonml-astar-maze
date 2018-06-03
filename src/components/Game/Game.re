@@ -2,6 +2,8 @@ open World;
 open Grid;
 open Cell;
 
+let text = ReasonReact.string;
+
 module Problem = SearchProblem.Make(PositionSearchProblem);
 module GS = GraphSearch.Make(Problem);
 
@@ -68,14 +70,94 @@ module Game = {
   let styles =
     Css.(
       {
-        "page": [
-          boxSizing(borderBox),
-          background(linearGradient(deg(45), [(0, red), (100, blue)])),
-          width(vw(100.)),
-          height(vh(100.)),
+        "game": [
+          display(flexBox),
+          flexDirection(column),
+          alignItems(center),
+          justifyContent(center),
+          width(pct(100.)),
+          height(pct(100.)),
+        ],
+        "title": [
+          fontFamily("'Press Restart 2P'"),
+          color(hex("E2E2E2")),
+        ],
+        "controls": [
+          selector(
+            "& > button",
+            [
+              border(px(1), solid, white),
+              background(transparent),
+              color(hex("E2E2E2")),
+              width(px(120)),
+              paddingTop(px(12)),
+              paddingBottom(px(12)),
+              textTransform(uppercase),
+              margin(px(5)),
+              cursor(`pointer),
+            ],
+          ),
+          display(flexBox),
+          flexDirection(row),
+          alignItems(center),
+          justifyContent(center),
+          marginBottom(px(16)),
         ],
       }
     );
-  let component = ReasonReact.statelessComponent("Game");
-  let make = _ => {...component, render: _ => <Grid steps=(search()) />};
+  type action =
+    | Tick
+    | Restart
+    | Play
+    | Pause;
+
+  type state = {
+    steps: list(array(array(cellT))),
+    count: int,
+    timerId: ref(option(Js.Global.intervalId)),
+    pause: bool,
+  };
+  let component = ReasonReact.reducerComponent("Game");
+  let make = _ => {
+    ...component,
+    initialState: () => {
+      let steps = search();
+      {steps, count: 0, timerId: ref(None), pause: true};
+    },
+    reducer: (action, state) =>
+      switch (action) {
+      | Restart =>
+        let steps = search();
+        ReasonReact.Update({...state, steps, pause: false, count: 0});
+      | Pause => ReasonReact.Update({...state, pause: true})
+      | Play => ReasonReact.Update({...state, pause: false})
+      | Tick =>
+        let maxCount = Belt.List.length(state.steps) - 1;
+        ReasonReact.Update({
+          ...state,
+          count: state.pause ? state.count : min(maxCount, state.count + 1),
+        });
+      },
+    didMount: self =>
+      self.state.timerId :=
+        Some(Js.Global.setInterval(() => self.send(Tick), 20)),
+    willUnmount: self =>
+      switch (self.state.timerId^) {
+      | Some(id) => Js.Global.clearInterval(id)
+      | None => ()
+      },
+    render: ({send, state: {steps, count, pause}}) =>
+      <div className=(Css.style(styles##game))>
+        <h1 className=(Css.style(styles##title))>
+          (text("Maze Eat&Find"))
+        </h1>
+        <div className=(Css.style(styles##controls))>
+          <button onClick=(_ => send(Restart))> (text("Restart")) </button>
+          <button onClick=(_ => send(pause ? Play : Pause))>
+            (text(pause ? "Play" : "Pause"))
+          </button>
+        </div>
+        <Grid matrix=(Belt.List.getExn(steps, count)) />
+      </div>,
+  };
 };

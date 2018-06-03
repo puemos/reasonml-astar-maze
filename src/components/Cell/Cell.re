@@ -16,33 +16,35 @@ module CellID =
 
 let tileWrapper = (~isWall) =>
   Css.[
-    width(px(20)),
-    height(px(20)),
+    minWidth(px(20)),
+    minHeight(px(20)),
     flexDirection(column),
     alignItems(center),
     justifyContent(center),
-    backgroundColor(isWall ? black : grey),
+    backgroundColor(isWall ? hex("4E4E50") : transparent),
     position(relative),
   ];
-let tile =
+let player =
   Css.[
+    position(absolute),
     display(flexBox),
     width(px(10)),
     height(px(10)),
-    backgroundColor(pink),
+    top(px(5)),
+    right(px(5)),
+    backgroundColor(hex("385889")),
   ];
 let food =
   Css.[
     position(absolute),
     display(flexBox),
+    borderRadius(pct(50.0)),
     top(px(8)),
     right(px(8)),
     width(px(4)),
     height(px(4)),
-    backgroundColor(green),
+    backgroundColor(hex("FFE400")),
   ];
-
-let component = ReasonReact.statelessComponent("Cell");
 
 module Cell = {
   let component = ReasonReact.statelessComponent("Cell");
@@ -54,7 +56,7 @@ module Cell = {
       | Wall => <div className=(Css.style(tileWrapper(~isWall=true))) />
       | Player =>
         <div className=(Css.style(tileWrapper(~isWall=false)))>
-          <div className=(Css.style(tile)) />
+          <div className=(Css.style(player)) />
         </div>
       | Food =>
         <div className=(Css.style(tileWrapper(~isWall=false)))>
@@ -62,9 +64,8 @@ module Cell = {
         </div>
       | PlayerFood =>
         <div className=(Css.style(tileWrapper(~isWall=false)))>
-          <div className=(Css.style(tile))>
-            <div className=(Css.style(food)) />
-          </div>
+          <div className=(Css.style(player)) />
+          <div className=(Css.style(food)) />
         </div>
       },
   };
