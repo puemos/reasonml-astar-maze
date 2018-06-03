@@ -1,4 +1,3 @@
-open Rationale;
 open SearchProblem;
 
 module type S = {
@@ -13,7 +12,12 @@ module Make = (P: SearchProblem) : (S with type state := P.state) => {
       let equal = ((_, a, _), (_, b, _)) => P.equal(a, b);
       let hash = ((_, a, _)) => P.hash(a);
     });
-
+  module StateID =
+    Belt.Id.MakeHashable({
+      type t = P.state;
+      let eq = (a, b) => P.equal(a, b);
+      let hash = a => P.hash(a);
+    });
   let popFrontierLine = frontier =>
     if (StatePriorityQueue.is_empty(frontier)) {
       None;
@@ -24,7 +28,7 @@ module Make = (P: SearchProblem) : (S with type state := P.state) => {
       Some(next);
     };
 
-  let rec loop = (~frontier, ~explored, ~steps, ~heuristic) => {
+  let rec searchDeep = (~frontier, ~explored, ~steps, ~heuristic) => {
     let next = popFrontierLine(frontier);
 
     switch (next) {
@@ -32,16 +36,18 @@ module Make = (P: SearchProblem) : (S with type state := P.state) => {
     | Some((_, state, actions)) =>
       let steps = steps @ [state];
       let isGoalState = P.isGoalState(state);
-      let isUnexplored = ! RList.containsWith(P.equal(state), explored);
+      let isUnexplored = ! Belt.HashMap.has(explored, state);
+
       if (isGoalState) {
         steps;
       } else if (isUnexplored) {
-        let explored = RList.append(state, explored);
+        /* let explored = RList.append(state, explored); */
+        Belt.HashMap.set(explored, state, None);
 
         state
         |> P.getSuccessors
         |> Belt.List.keep(_, ((successor, _, _)) =>
-             ! RList.containsWith(P.equal(successor), explored)
+             ! Belt.HashMap.has(explored, successor)
            )
         |> Belt.List.forEach(
              _,
@@ -56,9 +62,9 @@ module Make = (P: SearchProblem) : (S with type state := P.state) => {
              },
            );
 
-        loop(~frontier, ~explored, ~steps, ~heuristic);
+        searchDeep(~frontier, ~explored, ~steps, ~heuristic);
       } else {
-        loop(~frontier, ~explored, ~steps, ~heuristic);
+        searchDeep(~frontier, ~explored, ~steps, ~heuristic);
       };
     };
   };
@@ -66,7 +72,8 @@ module Make = (P: SearchProblem) : (S with type state := P.state) => {
   let search = (startState, heuristic) => {
     let frontier = StatePriorityQueue.make(((a, _, _), (b, _, _)) => a < b);
     StatePriorityQueue.add(frontier, (0, startState, []));
+    let explored = Belt.HashMap.make(~hintSize=10, ~id=(module StateID));
 
-    loop(~frontier, ~explored=[], ~steps=[], ~heuristic);
+    searchDeep(~frontier, ~explored, ~steps=[], ~heuristic);
   };
 };
