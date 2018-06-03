@@ -1,10 +1,11 @@
 open World;
+open Grid;
 open Cell;
 
 module Problem = SearchProblem.Make(PositionSearchProblem);
 module GS = GraphSearch.Make(Problem);
 
-let createMatrix = (~world, ~path) => {
+let createMatrix = (~world, ~path, ~starting) => {
   let matrixSize = world.width * world.height;
   let cellHash = Belt.HashMap.make(~hintSize=10, ~id=(module CellID));
 
@@ -14,17 +15,17 @@ let createMatrix = (~world, ~path) => {
   world.food
   |> Belt.List.forEach(_, point => Belt.HashMap.set(cellHash, point, Food));
 
-  [(0, 0), ...path]
+  [starting, ...path]
   |> Belt.List.forEach(
        _,
        point => {
-         let nextType =
+         let type_ =
            switch (Belt.HashMap.get(cellHash, point)) {
            | None => Player
            | Some(Food) => PlayerFood
            | _ => Player
            };
-         Belt.HashMap.set(cellHash, point, nextType);
+         Belt.HashMap.set(cellHash, point, type_);
        },
      );
 
@@ -54,15 +55,27 @@ let search = () => {
     });
 
   GS.search(startState, FoodAgent.heuristic)
-  |> Belt.List.map(_, ({path, world}) => createMatrix(~path, ~world));
+  |> Belt.List.map(_, ({path}) =>
+       createMatrix(
+         ~path,
+         ~world=startState.world,
+         ~starting=startState.player,
+       )
+     );
 };
 
-let component = ReasonReact.statelessComponent("Game");
-module Styles = {
-  open Css;
-};
-
-let make = _children => {
-  ...component,
-  render: self => <Grid steps=(search()) />,
+module Game = {
+  let styles =
+    Css.(
+      {
+        "page": [
+          boxSizing(borderBox),
+          background(linearGradient(deg(45), [(0, red), (100, blue)])),
+          width(vw(100.)),
+          height(vh(100.)),
+        ],
+      }
+    );
+  let component = ReasonReact.statelessComponent("Game");
+  let make = _ => {...component, render: _ => <Grid steps=(search()) />};
 };
