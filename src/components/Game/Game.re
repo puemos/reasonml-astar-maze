@@ -78,18 +78,16 @@ module Game = {
           width(pct(100.)),
           height(pct(100.)),
         ],
-        "title": [
-          fontFamily("'Press Restart 2P'"),
-          color(hex("E2E2E2")),
-        ],
+        "title": [color(hex("E2E2E2"))],
         "controls": [
           selector(
             "& > button",
             [
+              selector("&:hover", [border(px(1), solid, hex("FFE400"))]),
               border(px(1), solid, white),
               background(transparent),
-              color(hex("E2E2E2")),
-              width(px(120)),
+              color(hex("FFE400")),
+              width(px(200)),
               paddingTop(px(12)),
               paddingBottom(px(12)),
               textTransform(uppercase),
