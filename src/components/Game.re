@@ -104,47 +104,41 @@ module Game = {
       }
     );
   type action =
-    | Tick
     | Restart
     | Play
     | Pause;
 
   type state = {
     steps: list(array(array(cellT))),
-    count: int,
-    timerId: ref(option(Js.Global.intervalId)),
     pause: bool,
   };
   let component = ReasonReact.reducerComponent("Game");
+  let remoteAction = RemoteAction.create();
+
+  let renderValue = (steps, value) =>
+    <Grid matrix=(Belt.List.getExn(steps, int_of_float(value))) />;
+  let remoteAction = RemoteAction.create();
+
   let make = _ => {
     ...component,
     initialState: () => {
       let steps = search();
-      {steps, count: 0, timerId: ref(None), pause: true};
+      {steps, pause: true};
     },
     reducer: (action, state) =>
       switch (action) {
       | Restart =>
-        let steps = search();
-        ReasonReact.Update({...state, steps, pause: false, count: 0});
-      | Pause => ReasonReact.Update({...state, pause: true})
-      | Play => ReasonReact.Update({...state, pause: false})
-      | Tick =>
-        let maxCount = Belt.List.length(state.steps) - 1;
-        ReasonReact.Update({
-          ...state,
-          count: state.pause ? state.count : min(maxCount, state.count + 1),
-        });
+        RemoteAction.send(remoteAction, ~action=SpringComp.Value(0.0));
+        ReasonReact.Update({...state, pause: false});
+      | Pause =>
+        RemoteAction.send(remoteAction, ~action=SpringComp.Stop);
+
+        ReasonReact.Update({...state, pause: true});
+      | Play =>
+        RemoteAction.send(remoteAction, ~action=SpringComp.Start);
+        ReasonReact.Update({...state, pause: false});
       },
-    didMount: self =>
-      self.state.timerId :=
-        Some(Js.Global.setInterval(() => self.send(Tick), 20)),
-    willUnmount: self =>
-      switch (self.state.timerId^) {
-      | Some(id) => Js.Global.clearInterval(id)
-      | None => ()
-      },
-    render: ({send, state: {steps, count, pause}}) =>
+    render: ({send, state: {steps, pause}}) =>
       <div className=(Css.style(styles##game))>
         <h1 className=(Css.style(styles##title))>
           (text("Maze Eat&Find"))
@@ -155,7 +149,11 @@ module Game = {
             (text(pause ? "Play" : "Pause"))
           </button>
         </div>
-        <Grid matrix=(Belt.List.getExn(steps, count)) />
+        <SpringComp
+          remoteAction
+          targetValue=(float_of_int(Belt.List.length(steps) - 1))
+          renderValue=(renderValue(steps))
+        />
       </div>,
   };
 };
