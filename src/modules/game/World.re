@@ -7,6 +7,28 @@ type world = {
   food: list(pos),
 };
 
+type cellT =
+  | Empty
+  | Wall
+  | Food
+  | PlayerFood
+  | Player;
+
+module CellID =
+  Belt.Id.MakeHashable({
+    type t = pos;
+    let hash = ((x, y): t) => x + y * 10;
+    let eq = ((x1, y1): t, (x2, y2): t) => x1 == x2 && y1 == y2;
+  });
+
+let cellOfInt = cellInt =>
+  switch (cellInt) {
+  | 0 => Empty
+  | 1 => Wall
+  | 2 => Food
+  | _ => Empty
+  };
+
 let getNodeId = (width: int, x: int, y: int) => y * width + x;
 
 let getXY = (width: int, nodeId: int) => (nodeId mod width, nodeId / width);
@@ -18,65 +40,96 @@ let hashPosVector = (width: int, xs: list(pos)) =>
 
 let rec buildRow =
         (
-          (xx: int, yy: int),
+          (px: int, py: int),
           row,
           ~food: list((int, int)),
           ~walls: list((int, int)),
         ) =>
   switch (row) {
   | [] => (food, walls)
-  | [x] =>
-    switch (x) {
-    | "1" => buildRow((xx + 1, yy), [], ~food, ~walls=[(xx, yy), ...walls])
-    | "2" => buildRow((xx + 1, yy), [], ~food=[(xx, yy), ...food], ~walls)
-    | _ => buildRow((xx + 1, yy), [], ~food, ~walls)
-    }
+
   | [x, ...xs] =>
     switch (x) {
-    | "1" => buildRow((xx + 1, yy), xs, ~food, ~walls=[(xx, yy), ...walls])
-    | "2" => buildRow((xx + 1, yy), xs, ~food=[(xx, yy), ...food], ~walls)
-    | _ => buildRow((xx + 1, yy), xs, ~food, ~walls)
+    | Wall =>
+      buildRow((px + 1, py), xs, ~food, ~walls=[(px, py), ...walls])
+    | Food => buildRow((px + 1, py), xs, ~food=[(px, py), ...food], ~walls)
+    | _ => buildRow((px + 1, py), xs, ~food, ~walls)
     }
   };
 
-let rec buildMatrix =
+let rec toState =
         (
-          (xx: int, yy: int),
+          (px: int, py: int),
           matrix,
           ~food: list((int, int)),
           ~walls: list((int, int)),
         ) =>
   switch (matrix) {
   | [] => (food, walls)
-  | [x] =>
-    let (food, walls) = buildRow((xx, yy), x, ~food, ~walls);
-    buildMatrix((xx, yy + 1), [], ~food, ~walls);
-
   | [x, ...xs] =>
-    let (food, walls) = buildRow((xx, yy), x, ~food, ~walls);
-    buildMatrix((xx, yy + 1), xs, ~food, ~walls);
+    let (food, walls) = buildRow((px, py), x, ~food, ~walls);
+    toState((px, py + 1), xs, ~food, ~walls);
   };
 
-let loadMap = (map: string) : world => {
-  let matrix =
-    Js.String.split("\n", map)
-    |> Belt.List.fromArray
-    |> Belt.List.map(_, Js.String.split(","))
-    |> Belt.List.map(_, Belt.List.fromArray);
-
-  let height = Belt.List.length(matrix);
+let loadMap = (map: list(list(int))) : world => {
+  let cellMap = map |> Belt.List.map(_, Belt.List.map(_, cellOfInt));
+  let height = Belt.List.length(map);
   let width =
-    matrix
+    cellMap
     |> Belt.List.get(_, 0)
     |> Belt.Option.getWithDefault(_, [])
     |> Belt.List.length;
-  let (food, walls) = buildMatrix((0, 0), matrix, ~food=[], ~walls=[]);
+  let (food, walls) = toState((0, 0), cellMap, ~food=[], ~walls=[]);
 
   {width, height, food, walls};
 };
 
-/* let testMap = "0,0,1,0,0,1\n0,0,0,0,0,0\n0,0,0,0,0,0\n0,0,2,0,0,0\n0,0,0,0,0,0\n0,2,0,0,0,0"; */
-let testMap = "0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1,2,1,0,0,1,0,0,0,1,1,0,1,0,0,0\n0,0,1,1,0,0,0,0,0,0,2,0,0,1,0,0,0,1,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,1,1\n0,1,0,0,1,0,1,2,1,1,0,0,0,0,1,0,0,2,0,1,0,1,0,1,1,0,0,0,1,0,2,1,0,0,1,1\n0,0,0,0,1,0,1,1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,1,0,0,0,1\n1,0,1,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0\n0,0,0,0,1,1,0,0,0,1,0,0,1,1,1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0,1,0,0,0\n1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,2,0,0,1,0,0,0,1,0,0,0,0\n0,2,1,1,1,1,0,1,0,0,1,0,0,0,1,0,0,1,1,0,0,0,0,1,0,0,0,0,1,1,1,0,1,1,1,0\n0,0,0,0,0,1,0,0,0,0,1,1,1,1,1,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,1,1,0,1\n0,1,0,1,0,0,0,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0\n0,1,0,1,0,1,1,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,0,0,1,1,0,0,0,1,1,0\n1,0,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,0,1,0,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0\n0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,0,0,1,1,1,0,0,0,1,0,0,0,0,1,0,1,0,1,0\n0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,1,1,0,0,1,0,0,0,0\n1,0,0,1,0,1,0,0,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0\n0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,1,1,0,0,0,0,0,1,0,0,1,0,1,0,0,0,1,0\n0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0\n0,0,0,1,0,0,0,0,0,0,0,1,0,0,1,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0\n0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,1,1,0\n1,0,0,0,0,1,0,0,1,1,0,1,0,0,1,0,1,0,0,0,0,0,0,1,1,1,0,1,0,0,0,0,1,1,0,1\n0,1,1,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0\n1,0,0,0,1,0,1,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,0,0,1,1,0,0,0,1,0,0,0,0\n0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,1,0,1,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,1,0\n0,0,0,0,0,0,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,1,0,1,0,1,0,1,0,0,0";
-/* let testMap = "0,2,0\n0,0,0\n0,0,0"; */
+let fromState = (~world, ~path, ~starting) => {
+  let matrixSize = world.width * world.height;
+  let cellHash = Belt.HashMap.make(~hintSize=10, ~id=(module CellID));
 
-let make = (map: string) => loadMap(map);
+  world.walls
+  |> Belt.List.forEach(_, point => Belt.HashMap.set(cellHash, point, Wall));
+
+  world.food
+  |> Belt.List.forEach(_, point => Belt.HashMap.set(cellHash, point, Food));
+
+  [starting, ...path]
+  |> Belt.List.forEach(
+       _,
+       point => {
+         let type_ =
+           switch (Belt.HashMap.get(cellHash, point)) {
+           | None => Player
+           | Some(Food) => PlayerFood
+           | _ => Player
+           };
+         Belt.HashMap.set(cellHash, point, type_);
+       },
+     );
+
+  matrixSize
+  |> Belt.List.make(_, None)
+  |> Belt.List.mapWithIndex(_, (idx, _) => getXY(world.width, idx))
+  |> Belt.List.map(_, point =>
+       switch (Belt.HashMap.get(cellHash, point)) {
+       | None => Empty
+       | Some(type_) => type_
+       }
+     )
+  |> Belt.List.toArray
+  |> Belt.Array.reverse
+  |> Belt.List.fromArray
+  |> Rationale.RList.splitEvery(world.width)
+  |> Belt.List.map(_, xs => xs |> Belt.List.toArray |> Belt.Array.reverse)
+  |> Belt.List.toArray;
+};
+
+let stringToMatrix = (map: string) =>
+  Js.String.split("\n", map)
+  |> Belt.List.fromArray
+  |> Belt.List.map(_, Js.String.split(","))
+  |> Belt.List.map(_, Belt.List.fromArray)
+  |> Belt.List.map(_, Belt.List.map(_, int_of_string));
+
+let make = map => loadMap(map);

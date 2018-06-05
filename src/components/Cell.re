@@ -1,19 +1,5 @@
 open World;
 
-type cellT =
-  | Empty
-  | Wall
-  | Food
-  | PlayerFood
-  | Player;
-
-module CellID =
-  Belt.Id.MakeHashable({
-    type t = pos;
-    let hash = ((x, y): t) => x + y * 10;
-    let eq = ((x1, y1): t, (x2, y2): t) => x1 == x2 && y1 == y2;
-  });
-
 let tileWrapper = (~isWall) =>
   Css.[
     minWidth(px(20)),
