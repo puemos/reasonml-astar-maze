@@ -38,12 +38,21 @@ module Game = {
           width(pct(100.)),
           height(pct(100.)),
         ],
-        "title": [color(hex("E2E2E2"))],
+        "searching": [color(hex("5764cc")), marginTop(vh(20.))],
+        "title": [marginTop(px(50)), color(hex("E2E2E2"))],
         "controls": [
           selector(
             "& > button",
             [
               selector("&:hover", [border(px(1), solid, hex("FFE400"))]),
+              selector(
+                "&[disabled]",
+                [
+                  opacity(0.2),
+                  cursor(`default),
+                  border(px(1), solid, white),
+                ],
+              ),
               border(px(1), solid, white),
               background(transparent),
               color(hex("FFE400")),
@@ -64,9 +73,10 @@ module Game = {
       }
     );
   type action =
-    | Reset
+    | Rollback
     | Start
     | Edit
+    | Search
     | ChangeCell(pos, cellT);
 
   type state = {
@@ -74,6 +84,7 @@ module Game = {
     map: array(array(int)),
     changed: bool,
     edit: bool,
+    searching: bool,
   };
   let component = ReasonReact.reducerComponent("Game");
 
@@ -95,7 +106,7 @@ module Game = {
     initialState: () => {
       let map = Maps.allMaps[0];
       let steps = search(~player=(0, 0), ~map);
-      {steps, map, changed: false, edit: false};
+      {steps, map, changed: false, edit: false, searching: false};
     },
     reducer: (action, state) =>
       switch (action) {
@@ -103,18 +114,28 @@ module Game = {
       | ChangeCell((px, py), c) =>
         state.map[py][px] = intOfCell(c);
         Update({...state, map: state.map, changed: true});
-      | Reset =>
+      | Rollback =>
         SideEffects(
           (
             _ => RemoteAction.send(remoteAction, ~action=SpringComp.Start(0.))
+          ),
+        )
+      | Search =>
+        UpdateWithSideEffects(
+          {...state, changed: false, searching: true},
+          (
+            ({send}) => {
+              Js.Global.setTimeout(() => send(Start), 10) |> ignore;
+              ();
+            }
           ),
         )
       | Start =>
         UpdateWithSideEffects(
           {
             ...state,
+            searching: false,
             steps: search(~player=(0, 0), ~map=state.map),
-            changed: false,
           },
           (
             ({state}) =>
@@ -128,25 +149,35 @@ module Game = {
           ),
         )
       },
-    didMount: ({send}) => send(Reset),
-    render: ({send, state: {map, steps, edit, changed}}) =>
+    didMount: ({send}) => send(Rollback),
+    render: ({send, state: {map, steps, edit, changed, searching}}) =>
       <div className=(Css.style(styles##game))>
         <h1 className=(Css.style(styles##title))>
           (text("Maze Eat&Find"))
         </h1>
         <div className=(Css.style(styles##controls))>
-          <button onClick=(_ => send(Reset))> (text("Reset")) </button>
-          <button onClick=(_ => send(Start))> (text("Start")) </button>
-          <button onClick=(_ => send(Edit))> (text("Edit")) </button>
+          <button disabled=(edit || searching) onClick=(_ => send(Rollback))>
+            (text("Rollback"))
+          </button>
+          <button disabled=(edit || searching) onClick=(_ => send(Search))>
+            (text("Search"))
+          </button>
+          <button disabled=searching onClick=(_ => send(Edit))>
+            (text(edit ? "Done" : "Edit"))
+          </button>
         </div>
         (
-          switch (edit, changed) {
-          | (true, _) =>
+          switch (edit, changed, searching) {
+          | (_, _, true) =>
+            <div className=(Css.style(styles##searching))>
+              (text("Searching..."))
+            </div>
+          | (true, _, _) =>
             <Grid
               matrix=(map2CellMatrix(map))
               onCellClick=((p, c) => send(ChangeCell(p, c)))
             />
-          | (false, true) =>
+          | (false, true, _) =>
             <Grid matrix=(map2CellMatrix(map)) onCellClick=((_, _) => ()) />
           | _ => <SpringComp remoteAction renderValue=(renderValue(steps)) />
           }
