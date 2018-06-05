@@ -7,13 +7,10 @@ let text = ReasonReact.string;
 module Problem = SearchProblem.Make(PositionSearchProblem);
 module GS = GraphSearch.Make(Problem);
 
-let search = () => {
+let search = (~player=(0, 0), ~map) => {
+  let world = World.make(map);
   let startState =
-    PositionSearchProblem.getStartState({
-      world: World.make(Maps.allMaps[0]),
-      player: (0, 0),
-      path: [],
-    });
+    PositionSearchProblem.getStartState({world, player, path: []});
 
   GS.search(startState, FoodAgent.heuristic)
   |> Belt.List.map(_, ({path}) =>
@@ -68,6 +65,8 @@ module Game = {
 
   type state = {
     steps: list(array(array(cellT))),
+    currentMap: list(list(int)),
+    editMap: list(list(int)),
     pause: bool,
   };
   let component = ReasonReact.reducerComponent("Game");
@@ -80,8 +79,9 @@ module Game = {
   let make = _ => {
     ...component,
     initialState: () => {
-      let steps = search();
-      {steps, pause: true};
+      let currentMap = Maps.allMaps[0];
+      let steps = search(~player=(0, 0), ~map=currentMap);
+      {steps, currentMap, editMap: [], pause: true};
     },
     reducer: (action, state) =>
       switch (action) {
@@ -89,14 +89,20 @@ module Game = {
         RemoteAction.send(remoteAction, ~action=SpringComp.Start(0.));
         ReasonReact.Update({...state, pause: false});
       | Start =>
-        RemoteAction.send(
-          remoteAction,
-          ~action=
-            SpringComp.Start(
-              float_of_int(Belt.List.length(state.steps) - 1),
-            ),
+        let steps = search(~player=(0, 0), ~map=state.currentMap);
+        UpdateWithSideEffects(
+          {...state, steps, pause: false},
+          (
+            _ =>
+              RemoteAction.send(
+                remoteAction,
+                ~action=
+                  SpringComp.Start(
+                    float_of_int(Belt.List.length(state.steps) - 1),
+                  ),
+              )
+          ),
         );
-        ReasonReact.Update({...state, pause: false});
       },
     didMount: ({send}) => send(Reset),
     render: ({send, state: {steps, pause}}) =>
