@@ -34,18 +34,20 @@ let food =
 
 module Cell = {
   let component = ReasonReact.statelessComponent("Cell");
-  let make = (~type_, _) => {
+  let make = (~type_, ~onClick, _) => {
     ...component,
     render: _ =>
       switch (type_) {
-      | Empty => <div className=(Css.style(tileWrapper(~isWall=false))) />
-      | Wall => <div className=(Css.style(tileWrapper(~isWall=true))) />
+      | Empty =>
+        <div onClick className=(Css.style(tileWrapper(~isWall=false))) />
+      | Wall =>
+        <div onClick className=(Css.style(tileWrapper(~isWall=true))) />
       | Player =>
         <div className=(Css.style(tileWrapper(~isWall=false)))>
           <div className=(Css.style(player)) />
         </div>
       | Food =>
-        <div className=(Css.style(tileWrapper(~isWall=false)))>
+        <div onClick className=(Css.style(tileWrapper(~isWall=false)))>
           <div className=(Css.style(food)) />
         </div>
       | PlayerFood =>

@@ -1,4 +1,5 @@
 open Cell;
+open World;
 
 module Grid = {
   let styles =
@@ -22,12 +23,30 @@ module Grid = {
     );
 
   let component = ReasonReact.statelessComponent("Grid");
-  let make = (~matrix, _) => {
+  let make = (~matrix, ~onCellClick, _) => {
     ...component,
     render: _ => {
       let matrixNode =
         matrix
-        |> Belt.Array.map(_, Belt.Array.map(_, type_ => <Cell type_ />))
+        |> Belt.Array.mapWithIndex(_, (y, row) =>
+             Belt.Array.mapWithIndex(row, (x, type_) =>
+               <Cell
+                 onClick=(
+                   _ =>
+                     onCellClick(
+                       (x, y),
+                       switch (type_) {
+                       | Wall => Empty
+                       | Empty => Food
+                       | Food => Wall
+                       | _ => Empty
+                       },
+                     )
+                 )
+                 type_
+               />
+             )
+           )
         |> Belt.Array.map(_, xs =>
              <div className=(Css.style(styles##row))>
                (ReasonReact.array(xs))

@@ -21,6 +21,14 @@ module CellID =
     let eq = ((x1, y1): t, (x2, y2): t) => x1 == x2 && y1 == y2;
   });
 
+let intOfCell = i =>
+  switch (i) {
+  | Empty => 0
+  | Wall => 1
+  | Food => 2
+  | _ => 0
+  };
+
 let cellOfInt = cellInt =>
   switch (cellInt) {
   | 0 => Empty
@@ -71,9 +79,15 @@ let rec toState =
     toState((px, py + 1), xs, ~food, ~walls);
   };
 
-let loadMap = (map: list(list(int))) : world => {
-  let cellMap = map |> Belt.List.map(_, Belt.List.map(_, cellOfInt));
-  let height = Belt.List.length(map);
+let toCellMatrix = (map: array(array(int))) =>
+  map
+  |> Belt.Array.map(_, Belt.Array.map(_, cellOfInt))
+  |> Belt.Array.map(_, Belt.List.fromArray)
+  |> Belt.List.fromArray;
+
+let loadMap = (map: array(array(int))) : world => {
+  let cellMap = map |> toCellMatrix;
+  let height = Belt.Array.length(map);
   let width =
     cellMap
     |> Belt.List.get(_, 0)
@@ -118,10 +132,10 @@ let fromState = (~world, ~path, ~starting) => {
        }
      )
   |> Belt.List.toArray
-  |> Belt.Array.reverse
+  /* |> Belt.Array.reverse */
   |> Belt.List.fromArray
   |> Rationale.RList.splitEvery(world.width)
-  |> Belt.List.map(_, xs => xs |> Belt.List.toArray |> Belt.Array.reverse)
+  |> Belt.List.map(_, xs => xs |> Belt.List.toArray)
   |> Belt.List.toArray;
 };
 
