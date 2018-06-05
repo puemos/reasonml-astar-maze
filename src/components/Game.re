@@ -104,7 +104,8 @@ module Game = {
       }
     );
   type action =
-    | Restart;
+    | Reset
+    | Start;
 
   type state = {
     steps: list(array(array(cellT))),
@@ -125,7 +126,10 @@ module Game = {
     },
     reducer: (action, state) =>
       switch (action) {
-      | Restart =>
+      | Reset =>
+        RemoteAction.send(remoteAction, ~action=SpringComp.Start(0.));
+        ReasonReact.Update({...state, pause: false});
+      | Start =>
         RemoteAction.send(
           remoteAction,
           ~action=
@@ -135,14 +139,15 @@ module Game = {
         );
         ReasonReact.Update({...state, pause: false});
       },
-    didMount: ({send}) => send(Restart),
+    didMount: ({send}) => send(Reset),
     render: ({send, state: {steps, pause}}) =>
       <div className=(Css.style(styles##game))>
         <h1 className=(Css.style(styles##title))>
           (text("Maze Eat&Find"))
         </h1>
         <div className=(Css.style(styles##controls))>
-          <button onClick=(_ => send(Restart))> (text("Restart")) </button>
+          <button onClick=(_ => send(Reset))> (text("Reset")) </button>
+          <button onClick=(_ => send(Start))> (text("Start")) </button>
         </div>
         <SpringComp remoteAction renderValue=(renderValue(steps)) />
       </div>,
