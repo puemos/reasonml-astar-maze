@@ -5,23 +5,17 @@ type state = {
 };
 type action =
   | Value(float)
-  | Start
+  | Start(float)
   | Stop;
 let component = ReasonReact.reducerComponent("SpringComp");
-let make =
-    (~remoteAction, ~renderValue, ~initValue=0.0, ~targetValue=1.0, _children) => {
+let make = (~remoteAction, ~renderValue, ~initValue=0.0, _children) => {
   ...component,
   initialState: () => {
     animation: SpringAnimation.create(initValue),
     value: initValue,
-    target: targetValue,
+    target: 0.,
   },
   didMount: ({state, send, onUnmount}) => {
-    state.animation
-    |> SpringAnimation.setOnChange(
-         ~onChange=value => send(Value(value)),
-         ~finalValue=state.target,
-       );
     let token = RemoteAction.subscribe(~send, remoteAction);
     let cleanup = () =>
       switch (token) {
@@ -33,16 +27,29 @@ let make =
       SpringAnimation.stop(state.animation);
       cleanup();
     });
+
+    send(Start(0.));
   },
   reducer: (action, state) =>
     switch (action) {
     | Value(value) => Update({...state, value})
-    | Start =>
-      SpringAnimation.start(state.animation);
-      ReasonReact.NoUpdate;
+    | Start(finalValue) =>
+      UpdateWithSideEffects(
+        {...state, animation: SpringAnimation.create(0.), value: 0.},
+        (
+          self =>
+            state.animation
+            |> SpringAnimation.setOnChange(
+                 ~onChange=value => self.send(Value(value)),
+                 ~finalValue,
+                 ~speedup=0.2
+               )
+        ),
+      )
+
     | Stop =>
-      SpringAnimation.stop(state.animation);
-      ReasonReact.NoUpdate;
+      state.animation |> SpringAnimation.stop;
+      NoUpdate;
     },
   render: ({state}) => renderValue(state.value),
 };

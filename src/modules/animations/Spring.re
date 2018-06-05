@@ -7,7 +7,7 @@ type preset = {
   damping: float,
 };
 
-let noWobble = {stiffness: 170., damping: 26.};
+let noWobble = {stiffness: 130., damping: 26.};
 
 let gentle = {stiffness: 120., damping: 14.};
 

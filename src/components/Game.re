@@ -104,9 +104,7 @@ module Game = {
       }
     );
   type action =
-    | Restart
-    | Play
-    | Pause;
+    | Restart;
 
   type state = {
     steps: list(array(array(cellT))),
@@ -128,16 +126,16 @@ module Game = {
     reducer: (action, state) =>
       switch (action) {
       | Restart =>
-        RemoteAction.send(remoteAction, ~action=SpringComp.Value(0.0));
-        ReasonReact.Update({...state, pause: false});
-      | Pause =>
-        RemoteAction.send(remoteAction, ~action=SpringComp.Stop);
-
-        ReasonReact.Update({...state, pause: true});
-      | Play =>
-        RemoteAction.send(remoteAction, ~action=SpringComp.Start);
+        RemoteAction.send(
+          remoteAction,
+          ~action=
+            SpringComp.Start(
+              float_of_int(Belt.List.length(state.steps) - 1),
+            ),
+        );
         ReasonReact.Update({...state, pause: false});
       },
+    didMount: ({send}) => send(Restart),
     render: ({send, state: {steps, pause}}) =>
       <div className=(Css.style(styles##game))>
         <h1 className=(Css.style(styles##title))>
@@ -145,15 +143,8 @@ module Game = {
         </h1>
         <div className=(Css.style(styles##controls))>
           <button onClick=(_ => send(Restart))> (text("Restart")) </button>
-          <button onClick=(_ => send(pause ? Play : Pause))>
-            (text(pause ? "Play" : "Pause"))
-          </button>
         </div>
-        <SpringComp
-          remoteAction
-          targetValue=(float_of_int(Belt.List.length(steps) - 1))
-          renderValue=(renderValue(steps))
-        />
+        <SpringComp remoteAction renderValue=(renderValue(steps)) />
       </div>,
   };
 };
