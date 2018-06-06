@@ -1,6 +1,5 @@
 open World;
 open Grid;
-open Cell;
 
 let text = ReasonReact.string;
 
@@ -24,7 +23,6 @@ let search = (~player=(0, 0), ~map) => {
 
 let map2CellMatrix = (ls: array(array(int))) =>
   ls |> Belt.Array.map(_, Belt.Array.map(_, World.cellOfInt));
-/* |> Belt.Array.reverse; */
 
 module Game = {
   let styles =
@@ -90,6 +88,7 @@ module Game = {
 
   let renderValue = (steps, value) =>
     <Grid
+      editMode=false
       onCellClick=((_, _) => ())
       matrix=(
         Belt.List.getExn(
@@ -105,8 +104,7 @@ module Game = {
     ...component,
     initialState: () => {
       let map = Maps.allMaps[0];
-      let steps = search(~player=(0, 0), ~map);
-      {steps, map, changed: false, edit: false, searching: false};
+      {steps: [], map, changed: true, edit: false, searching: false};
     },
     reducer: (action, state) =>
       switch (action) {
@@ -174,11 +172,16 @@ module Game = {
             </div>
           | (true, _, _) =>
             <Grid
+              editMode=edit
               matrix=(map2CellMatrix(map))
               onCellClick=((p, c) => send(ChangeCell(p, c)))
             />
-          | (false, true, _) =>
-            <Grid matrix=(map2CellMatrix(map)) onCellClick=((_, _) => ()) />
+          | (_, true, _) =>
+            <Grid
+              editMode=edit
+              matrix=(map2CellMatrix(map))
+              onCellClick=((p, c) => send(ChangeCell(p, c)))
+            />
           | _ => <SpringComp remoteAction renderValue=(renderValue(steps)) />
           }
         )

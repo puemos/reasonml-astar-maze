@@ -2,6 +2,22 @@ open World;
 
 let tileWrapper = (~isWall) =>
   Css.[
+    selector("&[disabled]", [cursor(`default)]),
+    selector(
+      "&:not([disabled])",
+      [
+        selector(
+          "&:hover",
+          [
+            zIndex(2),
+            boxShadow(~blur=px(0), ~spread=px(1), hex("FFE400")),
+          ],
+        ),
+      ],
+    ),
+    borderWidth(px(0)),
+    outlineStyle(`none),
+    cursor(`default),
     minWidth(px(20)),
     minHeight(px(20)),
     flexDirection(column),
@@ -34,27 +50,39 @@ let food =
 
 module Cell = {
   let component = ReasonReact.statelessComponent("Cell");
-  let make = (~type_, ~onClick, _) => {
+  let handleClick = (disabled, fn) => disabled ? _ => () : fn;
+  let make = (~type_, ~onClick, ~disabled, _) => {
     ...component,
     render: _ =>
       switch (type_) {
       | Empty =>
-        <div onClick className=(Css.style(tileWrapper(~isWall=false))) />
+        <button
+          disabled
+          onClick=(handleClick(disabled, onClick))
+          className=(Css.style(tileWrapper(~isWall=false)))
+        />
       | Wall =>
-        <div onClick className=(Css.style(tileWrapper(~isWall=true))) />
+        <button
+          disabled
+          onClick=(handleClick(disabled, onClick))
+          className=(Css.style(tileWrapper(~isWall=true)))
+        />
       | Player =>
-        <div className=(Css.style(tileWrapper(~isWall=false)))>
+        <button disabled className=(Css.style(tileWrapper(~isWall=false)))>
           <div className=(Css.style(player)) />
-        </div>
+        </button>
       | Food =>
-        <div onClick className=(Css.style(tileWrapper(~isWall=false)))>
+        <button
+          disabled
+          onClick=(handleClick(disabled, onClick))
+          className=(Css.style(tileWrapper(~isWall=false)))>
           <div className=(Css.style(food)) />
-        </div>
+        </button>
       | PlayerFood =>
-        <div className=(Css.style(tileWrapper(~isWall=false)))>
+        <button disabled className=(Css.style(tileWrapper(~isWall=false)))>
           <div className=(Css.style(player)) />
           <div className=(Css.style(food)) />
-        </div>
+        </button>
       },
   };
 };

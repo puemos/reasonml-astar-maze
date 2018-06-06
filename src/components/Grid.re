@@ -23,7 +23,7 @@ module Grid = {
     );
 
   let component = ReasonReact.statelessComponent("Grid");
-  let make = (~matrix, ~onCellClick, _) => {
+  let make = (~matrix, ~onCellClick, ~editMode: bool, _) => {
     ...component,
     render: _ => {
       let matrixNode =
@@ -31,6 +31,7 @@ module Grid = {
         |> Belt.Array.mapWithIndex(_, (y, row) =>
              Belt.Array.mapWithIndex(row, (x, type_) =>
                <Cell
+                 disabled=(! editMode)
                  onClick=(
                    _ =>
                      onCellClick(
