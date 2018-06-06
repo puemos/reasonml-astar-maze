@@ -7,6 +7,7 @@ Css.(
   global(
     "html, body",
     [
+      fontFamily("monospace"),
       margin(zero),
       marginLeft(px(5)),
       padding(zero),

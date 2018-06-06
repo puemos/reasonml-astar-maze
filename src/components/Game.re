@@ -37,36 +37,45 @@ module Game = {
           height(pct(100.)),
         ],
         "searching": [color(hex("5764cc")), marginTop(vh(20.))],
-        "title": [marginTop(px(50)), color(hex("E2E2E2"))],
-        "controls": [
+        "title": [
+          textTransform(uppercase),
+          marginTop(px(50)),
+          color(hex("E2E2E2")),
+        ],
+        "button": [
           selector(
             "& > button",
             [
-              selector("&:hover", [border(px(1), solid, hex("FFE400"))]),
               selector(
-                "&[disabled]",
-                [
-                  opacity(0.2),
-                  cursor(`default),
-                  border(px(1), solid, white),
-                ],
+                "&:hover",
+                [borderBottom(px(1), solid, hex("FFE400"))],
               ),
-              border(px(1), solid, white),
+              selector("&[disabled]", [opacity(0.2), cursor(`default)]),
+              borderWidth(px(0)),
+              outlineStyle(none),
+              borderBottom(px(1), solid, transparent),
               background(transparent),
               color(hex("FFE400")),
-              width(px(200)),
               paddingTop(px(12)),
-              paddingBottom(px(12)),
+              paddingBottom(px(2)),
+              paddingRight(px(0)),
+              paddingLeft(px(0)),
               textTransform(uppercase),
-              margin(px(5)),
+              margin(px(0)),
               cursor(`pointer),
             ],
           ),
+          textAlign(center),
+          width(px(100)),
+        ],
+        "controls": [
           display(flexBox),
           flexDirection(row),
           alignItems(center),
-          justifyContent(center),
+          justifyContent(spaceAround),
           marginBottom(px(16)),
+          maxWidth(pct(80.)),
+          width(px(400)),
         ],
       }
     );
@@ -151,18 +160,25 @@ module Game = {
     render: ({send, state: {map, steps, edit, changed, searching}}) =>
       <div className=(Css.style(styles##game))>
         <h1 className=(Css.style(styles##title))>
-          (text("Maze Eat&Find"))
+          (text("Maze - eat'em all"))
         </h1>
         <div className=(Css.style(styles##controls))>
-          <button disabled=(edit || searching) onClick=(_ => send(Rollback))>
-            (text("Rollback"))
-          </button>
-          <button disabled=(edit || searching) onClick=(_ => send(Search))>
-            (text("Search"))
-          </button>
-          <button disabled=searching onClick=(_ => send(Edit))>
-            (text(edit ? "Done" : "Edit"))
-          </button>
+          <div className=(Css.style(styles##button))>
+            <button
+              disabled=(edit || searching) onClick=(_ => send(Rollback))>
+              (text("Rollback"))
+            </button>
+          </div>
+          <div className=(Css.style(styles##button))>
+            <button disabled=(edit || searching) onClick=(_ => send(Search))>
+              (text("Search"))
+            </button>
+          </div>
+          <div className=(Css.style(styles##button))>
+            <button disabled=searching onClick=(_ => send(Edit))>
+              (text(edit ? "Done" : "Edit"))
+            </button>
+          </div>
         </div>
         (
           switch (edit, changed, searching) {

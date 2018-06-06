@@ -6,6 +6,7 @@ let tileWrapper = (~isWall) =>
     selector(
       "&:not([disabled])",
       [
+        cursor(`pointer),
         selector(
           "&:hover",
           [

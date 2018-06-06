@@ -31,6 +31,7 @@ module Grid = {
         |> Belt.Array.mapWithIndex(_, (y, row) =>
              Belt.Array.mapWithIndex(row, (x, type_) =>
                <Cell
+                 key=(string_of_int(x) ++ "-" ++ string_of_int(y))
                  disabled=(! editMode)
                  onClick=(
                    _ =>
@@ -48,8 +49,10 @@ module Grid = {
                />
              )
            )
-        |> Belt.Array.map(_, xs =>
-             <div className=(Css.style(styles##row))>
+        |> Belt.Array.mapWithIndex(_, (idx, xs) =>
+             <div
+               key=("row-" ++ string_of_int(idx))
+               className=(Css.style(styles##row))>
                (ReasonReact.array(xs))
              </div>
            )
