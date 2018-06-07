@@ -16,8 +16,8 @@ let checkLeft = (~world as {walls}, ~x: int, ~y: int) =>
 let checkTop = (~world as {walls}, ~x: int, ~y: int) =>
   y - 1 < 0 || RList.contains((x, y - 1), walls);
 
-let checkBottom = (~world as {walls, width}, ~x: int, ~y: int) =>
-  y + 1 >= width || RList.contains((x, y + 1), walls);
+let checkBottom = (~world as {walls, height}, ~x: int, ~y: int) =>
+  y + 1 >= height || RList.contains((x, y + 1), walls);
 
 let getLegalActions = (world: world, player: pos) => {
   let world = world;
