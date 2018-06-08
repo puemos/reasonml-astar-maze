@@ -1,6 +1,8 @@
 open World;
 open Grid;
 
+[@bs.val] external innerWidth : int = "innerWidth";
+
 let text = ReasonReact.string;
 
 module Problem = SearchProblem.Make(PositionSearchProblem);
@@ -36,7 +38,12 @@ module Game = {
           width(pct(100.)),
           height(pct(100.)),
         ],
-        "searching": [color(hex("5764cc")), marginTop(vh(20.))],
+        "grid": [
+          position(fixed),
+          top(pct(60.)),
+          transform(translateY(pct(-50.))),
+          color(hex("5764cc")),
+        ],
         "title": [
           textTransform(uppercase),
           marginTop(px(50)),
@@ -112,7 +119,12 @@ module Game = {
   let make = _ => {
     ...component,
     initialState: () => {
-      let map = Maps.allMaps[0];
+      let map =
+        if (innerWidth / 20 < 22) {
+          Maps.allMaps##small;
+        } else {
+          Maps.allMaps##big;
+        };
       {steps: [], map, changed: true, edit: false, searching: false};
     },
     reducer: (action, state) =>
@@ -132,7 +144,7 @@ module Game = {
           {...state, changed: false, searching: true},
           (
             ({send}) => {
-              Js.Global.setTimeout(() => send(Start), 10) |> ignore;
+              Js.Global.setTimeout(() => send(Start), 1000) |> ignore;
               ();
             }
           ),
@@ -180,27 +192,21 @@ module Game = {
             </button>
           </div>
         </div>
-        (
-          switch (edit, changed, searching) {
-          | (_, _, true) =>
-            <div className=(Css.style(styles##searching))>
-              (text("Searching..."))
-            </div>
-          | (true, _, _) =>
-            <Grid
-              editMode=edit
-              matrix=(map2CellMatrix(map))
-              onCellClick=((p, c) => send(ChangeCell(p, c)))
-            />
-          | (_, true, _) =>
-            <Grid
-              editMode=edit
-              matrix=(map2CellMatrix(map))
-              onCellClick=((p, c) => send(ChangeCell(p, c)))
-            />
-          | _ => <SpringComp remoteAction renderValue=(renderValue(steps)) />
-          }
-        )
+        <div className=(Css.style(styles##grid))>
+          (
+            switch (edit, changed, searching) {
+            | (_, _, true) => text("Searching...")
+            | (false, false, false) =>
+              <SpringComp remoteAction renderValue=(renderValue(steps)) />
+            | _ =>
+              <Grid
+                editMode=edit
+                matrix=(map2CellMatrix(map))
+                onCellClick=((p, c) => send(ChangeCell(p, c)))
+              />
+            }
+          )
+        </div>
       </div>,
   };
 };
