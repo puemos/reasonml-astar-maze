@@ -1,6 +1,6 @@
 {
-  "name": "reasonml-ai-maze",
-  "homepage": "https://puemos.github.io/reasonml-ai-maze",
+  "name": "reasonml-astar-maze",
+  "homepage": "https://puemos.github.io/reasonml-astar-maze",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
