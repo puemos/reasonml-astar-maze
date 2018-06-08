@@ -10,8 +10,13 @@ Reason A* Pathfinding maze is an web-browser implementation of A* path finding a
 * Perform a search and find the shortest path between all the food points
 * Edit the maze
 
-## Description
-> In computer science, A* (pronounced as "A star") is a computer algorithm that is widely used in pathfinding and graph traversal, which is the process of plotting an efficiently directed path between multiple points, called "nodes". It enjoys widespread use due to its performance and accuracy. However, in practical travel-routing systems, it is generally outperformed by algorithms which can pre-process the graph to attain better performance,[1] although other work has found A* to be superior to other approaches.
+## Roadmap
+* Move the search module to a web worker
+* Improve the ui
+* Be able to edit the maze dimensions
+
+## [Description](https://en.wikipedia.org/wiki/A*_search_algorithm)
+> In computer science, A* (pronounced as "A star") is a computer algorithm that is widely used in pathfinding and graph traversal, which is the process of plotting an efficiently directed path between multiple points, called "nodes". It enjoys widespread use due to its performance and accuracy. However, in practical travel-routing systems, it is generally outperformed by algorithms which can pre-process the graph to attain better performance,although other work has found A* to be superior to other approaches.
 
 ## Modules
 * **Game**
