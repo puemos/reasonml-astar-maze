@@ -30,6 +30,19 @@ module Game = {
   let styles =
     Css.(
       {
+        "github": [
+          color(hex("fff")),
+          position(fixed),
+          top(px(8)),
+          right(px(8)),
+        ],
+        "copy": [
+          color(hex("fff")),
+          position(fixed),
+          bottom(px(8)),
+          left(px(8)),
+          textDecoration(none),
+        ],
         "game": [
           display(flexBox),
           flexDirection(column),
@@ -171,6 +184,11 @@ module Game = {
     didMount: ({send}) => send(Rollback),
     render: ({send, state: {map, steps, edit, changed, searching}}) =>
       <div className=(Css.style(styles##game))>
+        <a
+          href="https://github.com/puemos/reasonml-ai-maze"
+          className=(Css.style(styles##github))>
+          (text("source code"))
+        </a>
         <h1 className=(Css.style(styles##title))>
           (text("Maze - eat'em all"))
         </h1>
@@ -207,6 +225,11 @@ module Game = {
             }
           )
         </div>
+        <a
+          href="https://github.com/puemos"
+          className=(Css.style(styles##copy))>
+          (text("by @puemos"))
+        </a>
       </div>,
   };
 };
